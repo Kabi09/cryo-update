@@ -52,6 +52,12 @@ export const CustomerPOsPage = () => {
           (q) => q.status === 'ACCEPTED' || q.status === 'APPROVED'
         );
         setAcceptedQuotes(accepted);
+        if (accepted.length > 0) {
+          setCreateForm((prev) => ({
+            ...prev,
+            quotation: prev.quotation || accepted[0]._id
+          }));
+        }
       })
       .catch(() => {});
   }, [fetchPOs]);

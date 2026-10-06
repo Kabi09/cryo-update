@@ -33,11 +33,13 @@ const ReportsPage = () => {
         governanceApi.getDashboardMetrics().catch(() => ({ data: { data: null } }))
       ]);
 
-      setSalesReport(salesRes.data?.data);
-      setProductionReport(prodRes.data?.data);
-      setQualityReport(qaRes.data?.data);
-      setServiceReport(srvRes.data?.data);
-      setDashboardMetrics(dashRes.data?.data);
+      const getObj = (res) => (res?.data?.data !== undefined ? res.data.data : res?.data);
+
+      setSalesReport(getObj(salesRes));
+      setProductionReport(getObj(prodRes));
+      setQualityReport(getObj(qaRes));
+      setServiceReport(getObj(srvRes));
+      setDashboardMetrics(getObj(dashRes));
     } catch (err) {
       showError(err.message || 'Failed to aggregate enterprise analytics');
     } finally {

@@ -200,11 +200,17 @@ const releaseProductionOrder = async (id, req) => {
 };
 
 // MATERIAL REQUEST & INVENTORY STOCK CHECK (FULL, PARTIAL, NONE SHORTAGE FLOW)
-const requestMaterialsForProduction = async (productionOrderId, { warehouseId }, req) => {
+const requestMaterialsForProduction = async (productionOrderId, { warehouseId } = {}, req) => {
   const po = await ProductionOrder.findById(productionOrderId).populate('bom');
   if (!po) throw ApiError.notFound('Production order not found');
 
-  const warehouse = await Warehouse.findById(warehouseId) || (await Warehouse.findOne({ isDefault: true })) || (await Warehouse.findOne());
+  let warehouse = null;
+  if (warehouseId && mongoose.Types.ObjectId.isValid(warehouseId)) {
+    warehouse = await Warehouse.findById(warehouseId);
+  }
+  if (!warehouse) {
+    warehouse = (await Warehouse.findOne({ isDefault: true })) || (await Warehouse.findOne());
+  }
   if (!warehouse) throw ApiError.notFound('Warehouse not found');
 
   const bom = po.bom;
@@ -363,22 +369,23 @@ const issueMaterials = async (materialRequestId, req) => {
 };
 
 // PRODUCTION STAGE TRANSITIONS
-const advanceProductionStage = async (productionOrderId, { nextStage, remarks }, req) => {
+const advanceProductionStage = async (productionOrderId, { nextStage, remarks } = {}, req) => {
   const po = await ProductionOrder.findById(productionOrderId);
   if (!po) throw ApiError.notFound('Production order not found');
 
   const STAGES_ORDER = ['FABRICATION', 'REFRIGERATION', 'ELECTRICAL', 'ASSEMBLY', 'COMPLETED'];
-  const currentIndex = po.currentStage === 'READY' ? -1 : STAGES_ORDER.indexOf(po.currentStage);
-  const nextIndex = STAGES_ORDER.indexOf(nextStage);
+  const currentIndex = (!po.currentStage || po.currentStage === 'READY') ? -1 : STAGES_ORDER.indexOf(po.currentStage);
+  const targetStage = nextStage || STAGES_ORDER[currentIndex + 1] || 'COMPLETED';
+  const nextIndex = STAGES_ORDER.indexOf(targetStage);
 
   if (nextIndex !== currentIndex + 1) {
     throw ApiError.invalidWorkflowState(
-      `Invalid production stage transition: Cannot jump from ${po.currentStage} to ${nextStage}. Next required stage: ${STAGES_ORDER[currentIndex + 1]}`
+      `Invalid production stage transition: Cannot jump from ${po.currentStage || 'READY'} to ${targetStage}. Next required stage: ${STAGES_ORDER[currentIndex + 1]}`
     );
   }
 
   // Update current stage op
-  const op = po.stageOperations.find((s) => s.stage === nextStage);
+  const op = po.stageOperations.find((s) => s.stage === targetStage);
   if (op) {
     op.status = 'IN_PROGRESS';
     op.startedAt = new Date();
@@ -395,15 +402,15 @@ const advanceProductionStage = async (productionOrderId, { nextStage, remarks },
     }
   }
 
-  po.currentStage = nextStage;
-  po.status = nextStage === 'COMPLETED' ? WORKFLOW_STATUS.PRODUCTION_ORDER.COMPLETED : WORKFLOW_STATUS.PRODUCTION_ORDER.IN_PROGRESS;
+  po.currentStage = targetStage;
+  po.status = targetStage === 'COMPLETED' ? WORKFLOW_STATUS.PRODUCTION_ORDER.COMPLETED : WORKFLOW_STATUS.PRODUCTION_ORDER.IN_PROGRESS;
   po.statusHistory.push({
-    status: `STAGE_${nextStage}`,
+    status: `STAGE_${targetStage}`,
     changedBy: req.user._id,
-    remarks: remarks || `Moved to ${nextStage}`
+    remarks: remarks || `Moved to ${targetStage}`
   });
 
-  if (nextStage === 'COMPLETED') {
+  if (targetStage === 'COMPLETED') {
     po.actualCompletionDate = new Date();
 
     // Trigger QA Inspection automatically

@@ -177,24 +177,34 @@ const addFollowUp = async (id, followUpData, req) => {
 };
 
 const convertToEnquiry = async (id, enquiryData = {}, req) => {
-  const lead = await Lead.findById(id);
+  let lead = await Lead.findById(id);
   if (!lead) throw ApiError.notFound('Lead not found');
 
   if (!lead.customer) {
-    await qualifyLead(id, req);
+    lead = await qualifyLead(id, req);
   }
 
   validateStatusTransition('LEAD', lead.status, WORKFLOW_STATUS.LEAD.CONVERTED);
 
   const enquiryNumber = await getNextSequence('ENQUIRY');
-  const items = enquiryData.items || [
-    {
-      product: lead.product || (await Product.findOne())?._id,
-      quantity: lead.quantity || 1,
-      targetPrice: lead.expectedValue || 0,
-      specifications: lead.requirement
-    }
-  ];
+  const defaultProduct = lead.product || (await Product.findOne())?._id;
+
+  const items = (enquiryData.items && Array.isArray(enquiryData.items) && enquiryData.items.length > 0)
+    ? (await Promise.all(enquiryData.items.map(async (item) => ({
+        product: item.product || defaultProduct,
+        quantity: Number(item.quantity) || Number(lead.quantity) || 1,
+        targetPrice: item.targetPrice !== undefined ? Number(item.targetPrice) : (Number(lead.expectedValue) || 0),
+        specifications: item.specifications || lead.requirement || '',
+        notes: item.notes || ''
+      }))))
+    : [
+        {
+          product: defaultProduct,
+          quantity: Number(lead.quantity) || 1,
+          targetPrice: Number(lead.expectedValue) || 0,
+          specifications: lead.requirement || ''
+        }
+      ];
 
   const enquiry = await Enquiry.create({
     enquiryNumber,
@@ -355,10 +365,20 @@ const createQuotation = async (data, req) => {
   const validityDays = data.validityDays || 30;
   const validUntil = new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000);
 
-  const { items, subtotal, totalDiscount, totalTax, grandTotal } = calculateQuotationTotals(data.items || []);
+  const defaultProduct = (await Product.findOne())?._id;
+  const defaultCustomer = data.customer || (await Customer.findOne())?._id;
+
+  const rawItems = (data.items || []).map((item) => ({
+    ...item,
+    product: item.product || defaultProduct,
+    productName: item.productName || 'Cryo Ultra-Low Temperature Freezer'
+  }));
+
+  const { items, subtotal, totalDiscount, totalTax, grandTotal } = calculateQuotationTotals(rawItems);
 
   const quotation = await Quotation.create({
     ...data,
+    customer: defaultCustomer,
     quotationNumber,
     revisionNumber,
     revisionCode,

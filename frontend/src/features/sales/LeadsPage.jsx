@@ -97,7 +97,14 @@ export const LeadsPage = () => {
   const handleConvertToEnquiry = async (lead) => {
     try {
       await leadApi.convertToEnquiry(lead._id, {
-        items: [{ targetPrice: lead.expectedValue || 1000000, specifications: lead.requirement }]
+        items: [
+          {
+            product: lead.product?._id || lead.product || undefined,
+            quantity: lead.quantity || 1,
+            targetPrice: lead.expectedValue || 1000000,
+            specifications: lead.requirement || ''
+          }
+        ]
       });
       showToast(`Lead ${lead.leadNumber} converted to formal Enquiry`, 'success');
       fetchLeads();

@@ -32,7 +32,7 @@ const AuditLogsPage = () => {
       if (moduleFilter !== 'ALL') params.module = moduleFilter;
 
       const res = await governanceApi.getAuditLogs(params);
-      setLogs(res.data?.data || []);
+      setLogs(Array.isArray(res?.data) ? res.data : (res?.data?.data || []));
     } catch (err) {
       showError(err.message || 'Failed to load security audit trail');
     } finally {

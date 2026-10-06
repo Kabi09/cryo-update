@@ -66,8 +66,28 @@ export const QuotationsPage = () => {
   useEffect(() => {
     fetchQuotations();
     // Preload customers & products for quotation builder
-    masterDataApi.getCustomers({ limit: 50 }).then((res) => setCustomers(res.data || [])).catch(() => {});
-    masterDataApi.getProducts({ limit: 50 }).then((res) => setProducts(res.data || [])).catch(() => {});
+    masterDataApi.getCustomers({ limit: 50 }).then((res) => {
+      const custs = res.data || [];
+      setCustomers(custs);
+      if (custs.length > 0) {
+        setCreateForm((f) => ({ ...f, customerId: f.customerId || custs[0]._id }));
+      }
+    }).catch(() => {});
+
+    masterDataApi.getProducts({ limit: 50 }).then((res) => {
+      const prods = res.data || [];
+      setProducts(prods);
+      if (prods.length > 0) {
+        setCreateForm((f) => ({
+          ...f,
+          items: f.items.map((it, idx) =>
+            idx === 0
+              ? { ...it, product: it.product || prods[0]._id, productName: it.productName || prods[0].name, unitPrice: prods[0].standardPrice || it.unitPrice }
+              : it
+          )
+        }));
+      }
+    }).catch(() => {});
   }, [fetchQuotations]);
 
   const handleCreateQuotation = async (e) => {

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Installation = require('../models/Installation');
 const Warranty = require('../models/Warranty');
 const ServiceTicket = require('../models/ServiceTicket');
@@ -7,6 +8,7 @@ const Material = require('../models/Material');
 const Inventory = require('../models/Inventory');
 const StockLedger = require('../models/StockLedger');
 const Warehouse = require('../models/Warehouse');
+const User = require('../models/User');
 
 const ApiError = require('../utils/apiError');
 const { getNextSequence } = require('../utils/sequenceGenerator');
@@ -15,6 +17,28 @@ const { recordAudit } = require('../utils/auditLogger');
 const { createNotification } = require('../notifications/notificationService');
 const WORKFLOW_STATUS = require('../constants/workflowStatus');
 const ROLES = require('../constants/roles');
+
+const resolveUserOrSelf = async (identifier, req, defaultRole = null) => {
+  if (identifier && mongoose.Types.ObjectId.isValid(identifier)) {
+    const existing = await User.findById(identifier);
+    if (existing) return existing._id;
+  }
+  if (identifier && typeof identifier === 'string' && identifier.trim()) {
+    const query = {
+      $or: [
+        { email: identifier.trim().toLowerCase() },
+        { name: new RegExp(identifier.trim(), 'i') }
+      ]
+    };
+    const found = await User.findOne(query);
+    if (found) return found._id;
+  }
+  if (defaultRole) {
+    const roleUser = await User.findOne({ role: defaultRole });
+    if (roleUser) return roleUser._id;
+  }
+  return req?.user?._id || (await User.findOne())?._id;
+};
 
 // ========================== INSTALLATION & COMMISSIONING ==========================
 const getInstallations = async (query) => {
@@ -32,8 +56,11 @@ const createInstallation = async (data, req) => {
   const serial = await SerialNumber.findById(data.serialNumber);
   if (!serial) throw ApiError.notFound('Serial Number not found');
 
+  const assignedEngineer = await resolveUserOrSelf(data.assignedEngineer, req, ROLES.SERVICE_ENGINEER);
+
   const installation = await Installation.create({
     ...data,
+    assignedEngineer,
     installationNumber,
     salesOrder: serial.salesOrder,
     customer: serial.customer,
@@ -214,12 +241,14 @@ const assignEngineer = async (id, engineerId, req) => {
   const ticket = await ServiceTicket.findById(id);
   if (!ticket) throw ApiError.notFound('Service ticket not found');
 
-  ticket.assignedEngineer = engineerId;
+  const resolvedEngineer = await resolveUserOrSelf(engineerId, req, ROLES.SERVICE_ENGINEER);
+
+  ticket.assignedEngineer = resolvedEngineer;
   ticket.status = WORKFLOW_STATUS.SERVICE_TICKET.ASSIGNED;
   ticket.statusHistory.push({
     status: WORKFLOW_STATUS.SERVICE_TICKET.ASSIGNED,
     changedBy: req.user._id,
-    remarks: `Assigned to engineer ${engineerId}`
+    remarks: `Assigned to engineer ${resolvedEngineer}`
   });
   await ticket.save();
 

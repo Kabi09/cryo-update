@@ -1,4 +1,8 @@
-const buildPagination = (query) => {
+const escapeRegex = (string) => {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+const buildPagination = (query = {}) => {
   const page = Math.max(1, parseInt(query.page, 10) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(query.limit, 10) || 20));
   const skip = (page - 1) * limit;
@@ -10,16 +14,19 @@ const buildPagination = (query) => {
   return { page, limit, skip, sort };
 };
 
-const buildFilter = (query, searchableFields = [], exactFilterKeys = []) => {
+const buildFilter = (query = {}, searchableFields = [], exactFilterKeys = []) => {
   const filter = {};
 
-  if (query.status) {
-    filter.status = query.status;
+  if (query.status && query.status !== 'ALL' && query.status !== 'undefined' && query.status !== 'null' && query.status.trim() !== '') {
+    filter.status = query.status.trim();
   }
 
   exactFilterKeys.forEach((key) => {
-    if (query[key]) {
-      filter[key] = query[key];
+    const val = query[key];
+    if (val && val !== 'ALL' && val !== 'undefined' && val !== 'null' && typeof val === 'string' && val.trim() !== '') {
+      filter[key] = val.trim();
+    } else if (val && typeof val !== 'string') {
+      filter[key] = val;
     }
   });
 
@@ -33,8 +40,9 @@ const buildFilter = (query, searchableFields = [], exactFilterKeys = []) => {
     }
   }
 
-  if (query.search && searchableFields.length > 0) {
-    const searchRegex = new RegExp(query.search.trim(), 'i');
+  if (query.search && typeof query.search === 'string' && query.search.trim() !== '' && searchableFields.length > 0) {
+    const escaped = escapeRegex(query.search.trim());
+    const searchRegex = new RegExp(escaped, 'i');
     filter.$or = searchableFields.map((field) => ({ [field]: searchRegex }));
   }
 

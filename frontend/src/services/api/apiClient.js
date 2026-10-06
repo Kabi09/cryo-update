@@ -104,12 +104,22 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Format error payload
-    const errorPayload = error.response?.data?.error || {
-      code: 'NETWORK_ERROR',
-      message: error.message || 'Network request failed'
+    // Format error payload from backend ApiResponse
+    const data = error.response?.data || {};
+    let detailedMsg = data.message || error.message || 'Network request failed';
+    if (data.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+      const fieldDetails = data.errors
+        .map((e) => (e.field ? `${e.field}: ${e.message}` : e.message))
+        .join(', ');
+      detailedMsg = `${data.message || 'Validation error'} (${fieldDetails})`;
+    }
+
+    const errorPayload = {
+      code: data.code || 'REQUEST_ERROR',
+      message: detailedMsg,
+      errors: data.errors || [],
+      statusCode: error.response?.status || 500
     };
-    errorPayload.statusCode = error.response?.status || 500;
 
     return Promise.reject(errorPayload);
   }

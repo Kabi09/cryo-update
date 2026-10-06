@@ -94,12 +94,14 @@ const LogisticsPage = () => {
         salesOrderApi.getSalesOrders({ limit: 50 }).catch(() => ({ data: { data: [] } }))
       ]);
 
-      setFinishedGoods(fgRes.data?.data || []);
-      setPackings(packRes.data?.data || []);
-      setFinalInvoices(invRes.data?.data || []);
-      setDispatches(dispRes.data?.data || []);
-      setDeliveries(delRes.data?.data || []);
-      setSalesOrders(soRes.data?.data || []);
+      const getData = (res) => (Array.isArray(res?.data) ? res.data : (res?.data?.data || []));
+
+      setFinishedGoods(getData(fgRes));
+      setPackings(getData(packRes));
+      setFinalInvoices(getData(invRes));
+      setDispatches(getData(dispRes));
+      setDeliveries(getData(delRes));
+      setSalesOrders(getData(soRes));
     } catch (err) {
       showError(err.message || 'Failed to load logistics telemetry');
     } finally {

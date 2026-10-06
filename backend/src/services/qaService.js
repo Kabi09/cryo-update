@@ -36,7 +36,7 @@ const getQAInspectionById = async (id) => {
   return qa;
 };
 
-const passQAInspection = async (id, { certificateNumber = null, testParameters = [] }, req) => {
+const passQAInspection = async (id, { certificateNumber = null, testParameters = [] } = {}, req) => {
   const qa = await QAInspection.findById(id).populate('productionOrder');
   if (!qa) throw ApiError.notFound('QA Inspection not found');
 
@@ -107,13 +107,13 @@ const passQAInspection = async (id, { certificateNumber = null, testParameters =
   return { qa, serialNumber: serialDoc, finishedGood };
 };
 
-const failQAInspection = async (id, { reworkInstructions, testParameters = [] }, req) => {
+const failQAInspection = async (id, { reworkInstructions, defectReason, testParameters = [] } = {}, req) => {
   const qa = await QAInspection.findById(id);
   if (!qa) throw ApiError.notFound('QA Inspection not found');
 
   qa.status = WORKFLOW_STATUS.QA_INSPECTION.FAILED;
   qa.result = 'FAILED';
-  qa.reworkInstructions = reworkInstructions || 'Temperature criteria not met during drawdown cycle';
+  qa.reworkInstructions = reworkInstructions || defectReason || 'Temperature criteria not met during drawdown cycle';
   if (testParameters.length > 0) {
     qa.testParameters = testParameters;
   }

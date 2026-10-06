@@ -97,12 +97,14 @@ const MasterDataPage = () => {
         masterDataApi.getConfigurations().catch(() => ({ data: { data: [] } }))
       ]);
 
-      setCustomers(cRes.data?.data || []);
-      setProducts(pRes.data?.data || []);
-      setMaterials(mRes.data?.data || []);
-      setVendors(vRes.data?.data || []);
-      setWarehouses(wRes.data?.data || []);
-      setConfigs(Array.isArray(cfgRes.data?.data) ? cfgRes.data.data : []);
+      const getData = (res) => (Array.isArray(res?.data) ? res.data : (res?.data?.data || []));
+
+      setCustomers(getData(cRes));
+      setProducts(getData(pRes));
+      setMaterials(getData(mRes));
+      setVendors(getData(vRes));
+      setWarehouses(getData(wRes));
+      setConfigs(getData(cfgRes));
     } catch (err) {
       showError(err.message || 'Failed to load master registries');
     } finally {

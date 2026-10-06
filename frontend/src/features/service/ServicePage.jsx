@@ -104,11 +104,13 @@ const ServicePage = () => {
         masterDataApi.getMaterials({ limit: 50 }).catch(() => ({ data: { data: [] } }))
       ]);
 
-      setInstallations(instRes.data?.data || []);
-      setWarranties(warRes.data?.data || []);
-      setServiceTickets(tickRes.data?.data || []);
-      setRMAs(rmaRes.data?.data || []);
-      setMaterials(matRes.data?.data || []);
+      const getData = (res) => (Array.isArray(res?.data) ? res.data : (res?.data?.data || []));
+
+      setInstallations(getData(instRes));
+      setWarranties(getData(warRes));
+      setServiceTickets(getData(tickRes));
+      setRMAs(getData(rmaRes));
+      setMaterials(getData(matRes));
     } catch (err) {
       showError(err.message || 'Failed to load field service data');
     } finally {

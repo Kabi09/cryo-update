@@ -40,8 +40,20 @@ const createPacking = async (data, req) => {
   const salesOrder = await SalesOrder.findById(data.salesOrder);
   if (!salesOrder) throw ApiError.notFound('Sales order not found');
 
+  const rawSerials = Array.isArray(data.serialNumbers) ? data.serialNumbers : [data.serialNumbers];
+  const serialIds = (await Promise.all(
+    rawSerials.filter(Boolean).map(async (id) => {
+      const sn = await SerialNumber.findById(id);
+      if (sn) return sn._id;
+      const fg = await FinishedGoods.findById(id);
+      if (fg && fg.serialNumber) return fg.serialNumber;
+      return id;
+    })
+  )).filter(Boolean);
+
   const packing = await Packing.create({
     ...data,
+    serialNumbers: serialIds,
     packingNumber,
     customer: salesOrder.customer,
     packedBy: req.user._id,
@@ -50,13 +62,13 @@ const createPacking = async (data, req) => {
 
   // Update serials to PACKED
   await SerialNumber.updateMany(
-    { _id: { $in: data.serialNumbers } },
+    { _id: { $in: serialIds } },
     { $set: { packing: packing._id, currentStatus: 'PACKED' } }
   );
 
   // Update finished goods to PACKED
   await FinishedGoods.updateMany(
-    { serialNumber: { $in: data.serialNumbers } },
+    { serialNumber: { $in: serialIds } },
     { $set: { status: 'PACKED' } }
   );
 
@@ -146,8 +158,20 @@ const createDispatch = async (data, req) => {
   const salesOrder = await SalesOrder.findById(data.salesOrder);
   if (!salesOrder) throw ApiError.notFound('Sales order not found');
 
+  const rawSerials = Array.isArray(data.serialNumbers) ? data.serialNumbers : [data.serialNumbers];
+  const serialIds = (await Promise.all(
+    rawSerials.filter(Boolean).map(async (id) => {
+      const sn = await SerialNumber.findById(id);
+      if (sn) return sn._id;
+      const fg = await FinishedGoods.findById(id);
+      if (fg && fg.serialNumber) return fg.serialNumber;
+      return id;
+    })
+  )).filter(Boolean);
+
   const dispatch = await Dispatch.create({
     ...data,
+    serialNumbers: serialIds,
     dispatchNumber,
     customer: salesOrder.customer,
     status: WORKFLOW_STATUS.DISPATCH.DISPATCHED
@@ -155,7 +179,7 @@ const createDispatch = async (data, req) => {
 
   // Update serials to DISPATCHED
   await SerialNumber.updateMany(
-    { _id: { $in: data.serialNumbers } },
+    { _id: { $in: serialIds } },
     { $set: { dispatch: dispatch._id, currentStatus: 'DISPATCHED' } }
   );
 
