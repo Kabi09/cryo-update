@@ -1,0 +1,84 @@
+// ==============================================================================
+// CRYO SCIENTIFIC SYSTEMS ERP — DESIGN TOKENS
+// High-End Industrial / Scientific Instrumentation Aesthetics
+// ==============================================================================
+
+:root {
+  // Color Palette — Cryogenic Substrate
+  --bg-app: #080d19;
+  --bg-surface: #0f172a;
+  --bg-surface-raised: #152238;
+  --bg-surface-elevated: #1c2d4a;
+  --bg-surface-glass: rgba(15, 23, 42, 0.85);
+  
+  // Borders & Hairlines
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --border-focus: #06b6d4;
+  --border-active: rgba(6, 182, 212, 0.4);
+
+  // Text Hierarchy
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #020617;
+
+  // Scientific Accent Colors
+  --accent-cryo: #06b6d4;          // Cryo Cyan
+  --accent-cryo-glow: rgba(6, 182, 212, 0.2);
+  --accent-deep: #0284c7;          // Precision Blue
+  --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
+  
+  // Status Semantics
+  --color-success: #10b981;
+  --color-success-bg: rgba(16, 185, 129, 0.12);
+  --color-success-border: rgba(16, 185, 129, 0.3);
+
+  --color-warning: #f59e0b;
+  --color-warning-bg: rgba(245, 158, 11, 0.12);
+  --color-warning-border: rgba(245, 158, 11, 0.3);
+
+  --color-danger: #f43f5e;
+  --color-danger-bg: rgba(244, 63, 94, 0.12);
+  --color-danger-border: rgba(244, 63, 94, 0.3);
+
+  --color-info: #38bdf8;
+  --color-info-bg: rgba(56, 189, 248, 0.12);
+  --color-info-border: rgba(56, 189, 248, 0.3);
+
+  --color-neutral: #94a3b8;
+  --color-neutral-bg: rgba(148, 163, 184, 0.1);
+  --color-neutral-border: rgba(148, 163, 184, 0.25);
+
+  // Typography
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  // Sizing & Spacing Scale
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  // Radii
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  // Shadows
+  --shadow-subtle: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
+  --shadow-elevation: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 25px rgba(6, 182, 212, 0.25);
+  --shadow-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+
+  // Transitions & Motion
+  --transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-base: 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
